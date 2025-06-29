@@ -49,10 +49,37 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
     input { width: 100px; }
     canvas { width: 100% !important; height: auto !important; }
 }
+
+/* Floating Telegram */
+.floating-telegram {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #229ED9;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    font-size: 16px;
+    font-weight: bold;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
 </style>
 </head>
 
 <body>
+<a href="https://t.me/EZ_CRYPTOIN" target="_blank" class="floating-telegram">
+   📲 Join Telegram EZCRYPTOIN
+</a>
+
 <h1>FaucetPay Multiply Dice - Kalkulator & Bot</h1>
 
 <!-- Kalkulator Payout -->
@@ -74,11 +101,10 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
     <tbody id="payoutTable"></tbody>
 </table>
 
-    <!-- Kalkulator Anti Lose -->
+<!-- Kalkulator Anti Lose -->
 <h2>Kalkulator Anti-Lose</h2>
 <button onclick="toggleElement('kalkulatorAntiLose')">💰 Tampilkan/Sembunyikan Kalkulator Anti-Lose</button>
 <div id="kalkulatorAntiLose" style="display:none; margin-top:10px;">
-
     <label>Base Bet (satoshi):</label><br>
     <input type="number" id="baseBet" value="10"><br>
 
@@ -109,7 +135,7 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
     </table>
 </div>
 
-    <!-- Bot Simulasi -->
+<!-- Bot Simulasi -->
 <h2>Bot Auto Betting + Simulasi</h2>
 <button onclick="toggleElement('botSection')">🤖 Tampilkan/Sembunyikan Bot Simulasi</button>
 <div id="botSection" style="display:none; margin-top:10px;">
@@ -126,12 +152,20 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
 <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-win-bling-2068.mp3"></audio>
 <audio id="loseSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
 
+<!-- Credit -->
+<hr>
+<p style="color: #94a3b8; font-size: 14px;">
+    Dibuat oleh <b>EZCRYPTOIN</b> | 
+    <a href="https://t.me/EZ_CRYPTOIN" target="_blank" style="color:#38bdf8; text-decoration:none;">
+        🔗 Join Channel Telegram
+    </a>
+</p>
+
 <script>
 let chart, probChart;
 let botRunning = false;
 let turbo = false;
 
-// Toggle Function
 function toggleElement(id) {
     const div = document.getElementById(id);
     div.style.display = div.style.display === 'none' ? 'block' : 'none';
@@ -151,7 +185,7 @@ function calculatePayout() {
     `;
 }
 
-// Generate Tabel Payout
+// Tabel Payout
 function generatePayoutTable() {
     const table = document.getElementById('payoutTable');
     for (let i = 1; i <= 99; i++) {
@@ -160,7 +194,7 @@ function generatePayoutTable() {
     }
 }
 
-// Kalkulator Anti-Lose
+// Kalkulator Anti Lose
 function calculateAntiLose() {
     const baseBet = +document.getElementById('baseBet').value;
     const maxLose = +document.getElementById('maxLose').value;
@@ -268,7 +302,7 @@ async function runBot() {
     }
 }
 
-// Turbo
+// Turbo Mode
 function toggleTurbo() {
     turbo = !turbo;
     alert("Turbo Mode: " + (turbo ? "ON" : "OFF"));
@@ -305,7 +339,6 @@ function plotProbabilityChart() {
 
 generatePayoutTable();
 </script>
+
 </body>
 </html>
-
-    

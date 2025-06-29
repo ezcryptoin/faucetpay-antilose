@@ -202,3 +202,250 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
 <!-- Sound -->
 <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-win-bling-2068.mp3"></audio>
 <audio id="loseSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+
+    <script>
+let chart, probChart;
+let botRunning = false;
+let turbo = false;
+
+function toggleElement(id) {
+    const div = document.getElementById(id);
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+// Kalkulator Payout
+function calculatePayout() {
+    const chance = parseFloat(document.getElementById('chanceInput').value);
+    if (chance <= 0 || chance >= 100) {
+        document.getElementById('payoutResult').innerHTML = "<b>Chance harus antara 1% sampai 99%</b>";
+        return;
+    }
+    const payout = (99 / chance) * 0.99;
+    document.getElementById('payoutResult').innerHTML = `
+        <p>Chance: <b>${chance}%</b></p>
+        <p>Payout: <b>${payout.toFixed(4)}</b> kali lipat</p>
+    `;
+}
+
+// Tabel Payout
+function generatePayoutTable() {
+    const table = document.getElementById('payoutTable');
+    for (let i = 1; i <= 99; i++) {
+        const payout = (99 / i) * 0.99;
+        table.innerHTML += `<tr><td>${i}</td><td>${payout.toFixed(4)}</td></tr>`;
+    }
+}
+
+// Kalkulator Anti Lose
+function calculateAntiLose() {
+    const baseBet = +document.getElementById('baseBet').value;
+    const maxLose = +document.getElementById('maxLose').value;
+    const payout = +document.getElementById('payoutValue').value;
+    const maxBetLimit = +document.getElementById('maxBetLimit').value;
+
+    const output = document.getElementById('antiLoseOutput');
+    const tableBody = document.getElementById('antiLoseTable').querySelector('tbody');
+
+    let totalModal = (Math.pow(2, maxLose) - 1) * baseBet;
+    let probLose = Math.pow(0.5, maxLose) * 100;
+
+    output.innerHTML = `
+        <h3>Hasil</h3>
+        <p>Base Bet: <b>${baseBet}</b></p>
+        <p>Max Lose: <b>${maxLose}</b></p>
+        <p>Total Modal Aman: <b>${totalModal}</b></p>
+        <p>Probabilitas Lose ${maxLose}x: <b>${probLose.toFixed(4)}%</b></p>
+    `;
+
+    tableBody.innerHTML = '';
+    let total = 0;
+    for (let i = 0; i <= maxLose; i++) {
+        let currentBet = baseBet * Math.pow(2, i);
+        total += currentBet;
+        let profit = (currentBet * payout) - total;
+        let warn = currentBet > maxBetLimit ? "❌" : "✅";
+        tableBody.innerHTML += `
+        <tr>
+            <td>${i}</td>
+            <td>${currentBet}</td>
+            <td>${total}</td>
+            <td>${profit}</td>
+            <td>${warn}</td>
+        </tr>`;
+    }
+
+    plotProbabilityChart();
+}
+
+// Kalkulator Max Lose dari Modal
+function calculateMaxLose() {
+    const chance = +document.getElementById('chanceCalc').value;
+    const baseBet = +document.getElementById('baseBetCalc').value;
+    const modalAwal = +document.getElementById('modalAwalCalc').value;
+
+    const payout = (99 / chance) * 0.99;
+    const probLose = 1 - (chance / 100);
+
+    let maxLose = 0;
+    let total = 0;
+
+    while (true) {
+        const nextBet = baseBet * Math.pow(2, maxLose);
+        if (total + nextBet > modalAwal) break;
+        total += nextBet;
+        maxLose++;
+    }
+
+    const sisaModal = modalAwal - total;
+    const prob = (probLose ** maxLose) * 100;
+
+    document.getElementById('maxLoseResult').innerHTML = `
+        <p><b>Chance:</b> ${chance}%</p>
+        <p><b>Payout:</b> ${payout.toFixed(4)}x</p>
+        <p><b>Max Lose Aman:</b> ${maxLose} kali berturut-turut</p>
+        <p><b>Probabilitas Lose ${maxLose}x:</b> ${prob.toFixed(4)}%</p>
+        <p><b>Modal Terpakai:</b> ${total} satoshi</p>
+        <p><b>Sisa Modal:</b> ${sisaModal} satoshi</p>
+    `;
+}
+
+// Tabel Probabilitas Lose
+function generateProbLoseTable() {
+    const table = document.getElementById('probLoseTable');
+    for (let chance = 1; chance <= 95; chance++) {
+        const payout = (99 / chance) * 0.99;
+        const pLose = 1 - (chance / 100);
+
+        const prob3 = (pLose ** 3 * 100).toFixed(4) + '%';
+        const prob5 = (pLose ** 5 * 100).toFixed(4) + '%';
+        const prob7 = (pLose ** 7 * 100).toFixed(4) + '%';
+        const prob10 = (pLose ** 10 * 100).toFixed(4) + '%';
+
+        table.innerHTML += `
+        <tr>
+            <td>${chance}</td>
+            <td>${payout.toFixed(4)}</td>
+            <td>${prob3}</td>
+            <td>${prob5}</td>
+            <td>${prob7}</td>
+            <td>${prob10}</td>
+        </tr>`;
+    }
+}
+
+// Bot Simulasi
+function toggleBot() {
+    if (!botRunning) {
+        botRunning = true;
+        runBot();
+    } else {
+        botRunning = false;
+    }
+}
+
+async function runBot() {
+    const baseBet = +document.getElementById('baseBet').value;
+    const maxLose = +document.getElementById('maxLose').value;
+    const payout = +document.getElementById('payoutValue').value;
+    let balance = (Math.pow(2, maxLose) - 1) * baseBet;
+    let currentBet = baseBet;
+    let streak = 0;
+
+    let step = 0;
+    let balances = [balance];
+    let steps = [step];
+
+    while (botRunning) {
+        const win = Math.random() < 0.5;
+        step++;
+        if (win) {
+            balance += (currentBet * payout) - currentBet;
+            document.getElementById('winSound').play();
+            currentBet = baseBet;
+            streak = 0;
+        } else {
+            balance -= currentBet;
+            document.getElementById('loseSound').play();
+            streak++;
+            if (streak > maxLose) {
+                balance -= currentBet;
+                currentBet = baseBet;
+                streak = 0;
+            } else {
+                currentBet *= 2;
+            }
+        }
+        balances.push(balance);
+        steps.push(step);
+
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('simChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: steps,
+                datasets: [{
+                    label: 'Saldo (satoshi)',
+                    data: balances,
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                }]
+            }
+        });
+
+        await new Promise(r => setTimeout(r, turbo ? 50 : 500));
+    }
+}
+
+// Turbo Mode
+function toggleTurbo() {
+    turbo = !turbo;
+    alert("Turbo Mode: " + (turbo ? "ON" : "OFF"));
+}
+
+// Grafik Probabilitas vs Modal
+function plotProbabilityChart() {
+    const baseBet = +document.getElementById('baseBet').value;
+    const payouts = [];
+    const modals = [];
+    for (let lose = 1; lose <= 20; lose++) {
+        payouts.push(lose);
+        modals.push((Math.pow(2, lose) - 1) * baseBet);
+    }
+
+    if (probChart) probChart.destroy();
+    const ctx = document.getElementById('probChart').getContext('2d');
+    probChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: payouts,
+            datasets: [{
+                label: 'Total Modal vs Max Lose',
+                data: modals,
+                borderColor: 'red',
+                backgroundColor: 'rgba(248, 113, 113, 0.2)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2,
+            }]
+        }
+    });
+}
+
+generatePayoutTable();
+generateProbLoseTable();
+</script>
+
+<hr>
+<p style="color: #94a3b8; font-size: 14px;">
+    Dibuat oleh <b>EZCRYPTOIN</b> | 
+    <a href="https://t.me/EZ_CRYPTOIN" target="_blank" style="color:#38bdf8; text-decoration:none;">
+        🔗 Join Channel Telegram
+    </a>
+</p>
+
+</body>
+</html>

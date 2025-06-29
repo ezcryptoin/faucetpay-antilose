@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FaucetPay Anti-Lose</title>
+<title>FaucetPay Multiply Dice - Kalkulator Anti Lose</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body {
@@ -43,7 +43,7 @@ th, td {
     padding: 8px;
     text-align: center;
 }
-th { background-color: #1e3a8a; }
+th { background-color: #0ea5e9; }
 canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
 @media (max-width: 600px) {
     input { width: 100px; }
@@ -53,41 +53,72 @@ canvas { background: #f8fafc; border-radius: 10px; margin-top: 20px; }
 </head>
 
 <body>
-<h1>FaucetPay Anti-Lose Bot + Kalkulator</h1>
+<h1>FaucetPay Multiply Dice - Kalkulator & Bot</h1>
 
-<!-- Input Panel -->
-<label>Base Bet (satoshi):</label><br>
-<input type="number" id="baseBet" value="10"><br>
+<!-- Kalkulator Payout -->
+<h2>Kalkulator Payout</h2>
+<button onclick="toggleElement('kalkulatorPayout')">🔢 Tampilkan/Sembunyikan Kalkulator Payout</button>
+<div id="kalkulatorPayout" style="display:none; margin-top:10px;">
+    <label>Masukkan Chance (%):</label><br>
+    <input type="number" id="chanceInput" min="1" max="99" value="50">
+    <button onclick="calculatePayout()">Hitung</button>
+    <div class="result" id="payoutResult"></div>
+</div>
 
-<label>Max Lose:</label><br>
-<input type="number" id="maxLose" value="7"><br>
-
-<label>Payout (misal 1.98):</label><br>
-<input type="number" id="payout" value="1.98" step="0.01"><br>
-
-<label>Max Bet Limit:</label><br>
-<input type="number" id="maxBetLimit" value="500000"><br>
-
-<button onclick="calculate()">Hitung</button>
-<button onclick="simulate()">Simulasi Cepat</button>
-<button onclick="toggleBot()">Start/Pause Bot</button>
-<button onclick="toggleTurbo()">Toggle Turbo</button>
-
-<div class="result" id="output"></div>
-<table id="resultTable">
+<!-- Tabel Payout -->
+<h2>Tabel Payout 1% - 99%</h2>
+<table>
     <thead>
-        <tr>
-            <th>Lose ke-</th>
-            <th>Bet (satoshi)</th>
-            <th>Total Modal</th>
-            <th>Profit Jika Menang</th>
-            <th>Limit</th>
-        </tr>
+        <tr><th>Chance (%)</th><th>Payout</th></tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="payoutTable"></tbody>
 </table>
 
-<div class="result" id="simulationResult"></div>
+    <!-- Kalkulator Anti Lose -->
+<h2>Kalkulator Anti-Lose</h2>
+<button onclick="toggleElement('kalkulatorAntiLose')">💰 Tampilkan/Sembunyikan Kalkulator Anti-Lose</button>
+<div id="kalkulatorAntiLose" style="display:none; margin-top:10px;">
+
+    <label>Base Bet (satoshi):</label><br>
+    <input type="number" id="baseBet" value="10"><br>
+
+    <label>Max Lose:</label><br>
+    <input type="number" id="maxLose" value="7"><br>
+
+    <label>Payout:</label><br>
+    <input type="number" id="payoutValue" value="1.96" step="0.01"><br>
+
+    <label>Max Bet Limit:</label><br>
+    <input type="number" id="maxBetLimit" value="500000"><br>
+
+    <button onclick="calculateAntiLose()">Hitung Anti-Lose</button>
+
+    <div class="result" id="antiLoseOutput"></div>
+
+    <table id="antiLoseTable">
+        <thead>
+            <tr>
+                <th>Lose ke-</th>
+                <th>Bet (satoshi)</th>
+                <th>Total Modal</th>
+                <th>Profit Jika Menang</th>
+                <th>Limit</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+    <!-- Bot Simulasi -->
+<h2>Bot Auto Betting + Simulasi</h2>
+<button onclick="toggleElement('botSection')">🤖 Tampilkan/Sembunyikan Bot Simulasi</button>
+<div id="botSection" style="display:none; margin-top:10px;">
+    <button onclick="toggleBot()">▶️ Start/Pause Bot</button>
+    <button onclick="toggleTurbo()">⚡ Toggle Turbo</button>
+    <div class="result" id="simulationResult"></div>
+</div>
+
+<!-- Grafik -->
 <canvas id="simChart" width="800" height="400"></canvas>
 <canvas id="probChart" width="800" height="400"></canvas>
 
@@ -100,14 +131,44 @@ let chart, probChart;
 let botRunning = false;
 let turbo = false;
 
-function calculate() {
+// Toggle Function
+function toggleElement(id) {
+    const div = document.getElementById(id);
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+// Kalkulator Payout
+function calculatePayout() {
+    const chance = parseFloat(document.getElementById('chanceInput').value);
+    if (chance <= 0 || chance >= 100) {
+        document.getElementById('payoutResult').innerHTML = "<b>Chance harus antara 1% sampai 99%</b>";
+        return;
+    }
+    const payout = (99 / chance) * 0.99;
+    document.getElementById('payoutResult').innerHTML = `
+        <p>Chance: <b>${chance}%</b></p>
+        <p>Payout: <b>${payout.toFixed(4)}</b> kali lipat</p>
+    `;
+}
+
+// Generate Tabel Payout
+function generatePayoutTable() {
+    const table = document.getElementById('payoutTable');
+    for (let i = 1; i <= 99; i++) {
+        const payout = (99 / i) * 0.99;
+        table.innerHTML += `<tr><td>${i}</td><td>${payout.toFixed(4)}</td></tr>`;
+    }
+}
+
+// Kalkulator Anti-Lose
+function calculateAntiLose() {
     const baseBet = +document.getElementById('baseBet').value;
     const maxLose = +document.getElementById('maxLose').value;
-    const payout = +document.getElementById('payout').value;
+    const payout = +document.getElementById('payoutValue').value;
     const maxBetLimit = +document.getElementById('maxBetLimit').value;
 
-    const output = document.getElementById('output');
-    const tableBody = document.getElementById('resultTable').querySelector('tbody');
+    const output = document.getElementById('antiLoseOutput');
+    const tableBody = document.getElementById('antiLoseTable').querySelector('tbody');
 
     let totalModal = (Math.pow(2, maxLose) - 1) * baseBet;
     let probLose = Math.pow(0.5, maxLose) * 100;
@@ -140,69 +201,7 @@ function calculate() {
     plotProbabilityChart();
 }
 
-function simulate() {
-    const baseBet = +document.getElementById('baseBet').value;
-    const maxLose = +document.getElementById('maxLose').value;
-    const payout = +document.getElementById('payout').value;
-
-    let balance = (Math.pow(2, maxLose) - 1) * baseBet;
-    let currentBet = baseBet;
-    let streak = 0;
-    let wins = 0;
-    let losses = 0;
-    let balances = [balance];
-    let steps = [0];
-
-    for (let i = 1; i <= 500; i++) {
-        let win = Math.random() < 0.5;
-        if (win) {
-            balance += (currentBet * payout) - currentBet;
-            document.getElementById('winSound').play();
-            currentBet = baseBet;
-            streak = 0;
-            wins++;
-        } else {
-            balance -= currentBet;
-            document.getElementById('loseSound').play();
-            streak++;
-            if (streak > maxLose) {
-                losses++;
-                balance -= currentBet;
-                currentBet = baseBet;
-                streak = 0;
-            } else {
-                currentBet *= 2;
-            }
-        }
-        balances.push(balance);
-        steps.push(i);
-    }
-
-    document.getElementById('simulationResult').innerHTML = `
-        <h3>Simulasi 500x</h3>
-        <p>Saldo Akhir: <b>${balance.toFixed(2)}</b></p>
-        <p>Win: <b>${wins}</b> | Lose: <b>${losses}</b></p>
-    `;
-
-    if (chart) chart.destroy();
-    const ctx = document.getElementById('simChart').getContext('2d');
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: steps,
-            datasets: [{
-                label: 'Saldo (satoshi)',
-                data: balances,
-                borderColor: 'blue',
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-            }]
-        }
-    });
-}
-
+// Bot Simulasi
 function toggleBot() {
     if (!botRunning) {
         botRunning = true;
@@ -215,7 +214,7 @@ function toggleBot() {
 async function runBot() {
     const baseBet = +document.getElementById('baseBet').value;
     const maxLose = +document.getElementById('maxLose').value;
-    const payout = +document.getElementById('payout').value;
+    const payout = +document.getElementById('payoutValue').value;
     let balance = (Math.pow(2, maxLose) - 1) * baseBet;
     let currentBet = baseBet;
     let streak = 0;
@@ -269,11 +268,13 @@ async function runBot() {
     }
 }
 
+// Turbo
 function toggleTurbo() {
     turbo = !turbo;
     alert("Turbo Mode: " + (turbo ? "ON" : "OFF"));
 }
 
+// Grafik Probabilitas vs Modal
 function plotProbabilityChart() {
     const baseBet = +document.getElementById('baseBet').value;
     const payouts = [];
@@ -301,6 +302,10 @@ function plotProbabilityChart() {
         }
     });
 }
+
+generatePayoutTable();
 </script>
 </body>
 </html>
+
+    
